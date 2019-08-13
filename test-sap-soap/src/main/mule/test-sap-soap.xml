@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:wsc="http://www.mulesoft.org/schema/mule/wsc"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/wsc http://www.mulesoft.org/schema/mule/wsc/current/mule-wsc.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_8081" doc:name="HTTP Listener config" doc:id="17cfa666-0ee8-48c3-823a-81db99a4ca01" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="2bc44293-b81c-4038-a040-2d4e355b8eac" basePath="/sap/bc/srt/xip/sap/zzqrg_vendor_demo/500/zqrg_vendor_add/zqrg_vendor_add2" >
+		<http:request-connection host="pwcusadsap050-00006351.cloudapp.net" port="8000" >
+			<reconnection >
+				<reconnect />
+			</reconnection>
+			<http:authentication >
+				<http:digest-authentication username="jguo031" password="Be123456" />
+			</http:authentication>
+		</http:request-connection>
+	</http:request-config>
+	<wsc:config name="Web_Service_Consumer_Config" doc:name="Web Service Consumer Config" doc:id="fcb3a345-e186-4b9c-9141-dc753fd74fc1" >
+		<wsc:connection wsdlLocation="wsdl/sap.wsdl" service="ZQRG_VENDOR_ADD" port="ZQRG_VENDOR_ADD2" address="http://pwcusadsap050-00006351.cloudapp.net:8000/sap/bc/srt/xip/sap/zzqrg_vendor_demo/500/zqrg_vendor_add/zqrg_vendor_add2" >
+			<wsc:custom-transport-configuration >
+				<wsc:http-transport-configuration requesterConfig="HTTP_Request_configuration" />
+			</wsc:custom-transport-configuration>
+		</wsc:connection>
+	</wsc:config>
+	<flow name="test-sap-soapFlow" doc:id="6dac1b02-0b68-473f-ba36-c8bbe3ef909b" >
+		<http:listener doc:name="Listener" doc:id="96b5ba74-0098-4c44-a46a-b4f418926b31" config-ref="HTTP_Listener_8081" path="testadd2"/>
+		<ee:transform doc:name="Transform Message" doc:id="4615cac7-e0c1-4a18-b159-66d0cdb2a2b4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://qrg.proxy.com/webservice/
+---
+{
+	ns0#ZDEMO:{
+		VENDOR @(VENDOR_ID: "ZMULE_002" , ADD_NAME1: "test" , ADD_NAME2: "test") :"Mule4"
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<wsc:consume doc:name="SAP Soap Service" doc:id="46bd2a0a-1637-4019-9393-87402cacd056" config-ref="Web_Service_Consumer_Config" operation="ZVendorAddtionalNameIn">
+			<wsc:message >
+				<wsc:headers ><![CDATA[#[%dw 2.0
+output application/xml
+ns wsa http://www.w3.org/2005/08/addressing
+---
+{
+   headers: [{
+         wsa#Action: "http://qrg.proxy.com/webservice/ZQRG_VENDOR_DEMO/ZVendorAddtionalNameInRequest",
+         wsa#MessageID: correlationId
+   }]
+}]]]></wsc:headers>
+			</wsc:message>
+		</wsc:consume>
+	</flow>
+</mule>
